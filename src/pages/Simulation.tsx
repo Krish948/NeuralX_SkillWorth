@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useUserSkills, useAllSkills } from '@/hooks/useUserSkills';
 import { useJobs } from '@/hooks/useJobs';
 import { calculateSalaryFromSkills, getJobMatchScore, skillSalaryMap } from '@/data/skillsMapping';
@@ -9,22 +9,43 @@ import { FlaskConical, Plus, X, TrendingUp, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact, formatINRRange } from '@/lib/currency';
+import { StatePanel } from '@/components/ui/state-panel';
 
 export default function Simulation() {
   const isMobile = useIsMobile();
-  const { data: userSkills = [] } = useUserSkills();
-  const { data: allSkills = [] } = useAllSkills();
-  const { data: jobs = [] } = useJobs();
+  const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
+  const { data: allSkills = [], isLoading: allSkillsLoading, error: allSkillsError } = useAllSkills();
+  const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
   const [simSkills, setSimSkills] = useState<string[]>([]);
 
-  const currentSkillNames = useMemo(
-    () => userSkills.map(us => us.skills?.name).filter(Boolean) as string[],
-    [userSkills]
-  );
-  const combinedSkills = useMemo(
-    () => [...new Set([...currentSkillNames, ...simSkills])],
-    [currentSkillNames, simSkills]
-  );
+  if (userSkillsLoading || allSkillsLoading || jobsLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading simulation"
+          description="Collecting skills and jobs for your scenario..."
+        />
+      </div>
+    );
+  }
+
+  if (userSkillsError || allSkillsError || jobsError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load simulation"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  const currentSkillNames = userSkills.map(us => us.skills?.name).filter(Boolean) as string[];
+  const combinedSkills = [...new Set([...currentSkillNames, ...simSkills])];
 
   const currentSalary = calculateSalaryFromSkills(currentSkillNames);
   const simSalary = calculateSalaryFromSkills(combinedSkills);
@@ -34,13 +55,11 @@ export default function Simulation() {
     .filter(s => !currentSkillNames.includes(s.name) && !simSkills.includes(s.name))
     .sort((a, b) => (skillSalaryMap[b.name]?.salaryBoost || 0) - (skillSalaryMap[a.name]?.salaryBoost || 0));
 
-  const comparisonData = useMemo(() => {
-    return jobs.slice(0, isMobile ? 5 : 8).map(j => ({
-      role: j.role.length > 20 ? j.role.slice(0, 18) + '…' : j.role,
-      current: getJobMatchScore(currentSkillNames, j.required_skills),
-      simulated: getJobMatchScore(combinedSkills, j.required_skills),
-    }));
-  }, [currentSkillNames, combinedSkills, jobs, isMobile]);
+  const comparisonData = jobs.slice(0, isMobile ? 5 : 8).map(j => ({
+    role: j.role.length > 20 ? j.role.slice(0, 18) + '…' : j.role,
+    current: getJobMatchScore(currentSkillNames, j.required_skills),
+    simulated: getJobMatchScore(combinedSkills, j.required_skills),
+  }));
 
   const newJobMatches = jobs
     .map(j => ({

@@ -2,7 +2,6 @@ import { useUserSkills } from '@/hooks/useUserSkills';
 import { useJobs } from '@/hooks/useJobs';
 import { useFinance } from '@/hooks/useFinance';
 import { calculateSalaryFromSkills, getJobMatchScore, skillSalaryMap } from '@/data/skillsMapping';
-import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles, Briefcase, TrendingUp, Wallet } from 'lucide-react';
@@ -11,6 +10,7 @@ import { Link } from 'react-router-dom';
 import OnboardingChecklist from '@/components/OnboardingChecklist';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact, formatINRRange } from '@/lib/currency';
+import { StatePanel } from '@/components/ui/state-panel';
 
 const CHART_COLORS = [
   'hsl(160,84%,39%)',
@@ -35,9 +35,35 @@ const CHART_DOT_COLORS = [
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
-  const { data: userSkills = [] } = useUserSkills();
-  const { data: jobs = [] } = useJobs();
-  const { data: finance } = useFinance();
+  const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
+  const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
+  const { data: finance, isLoading: financeLoading, error: financeError } = useFinance();
+
+  if (userSkillsLoading || jobsLoading || financeLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading your dashboard"
+          description="Fetching skills, jobs, and finance insights..."
+        />
+      </div>
+    );
+  }
+
+  if (userSkillsError || jobsError || financeError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load dashboard"
+          description="Please refresh the page and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   const skillNames = userSkills.map(us => us.skills?.name).filter(Boolean) as string[];
   const salary = calculateSalaryFromSkills(skillNames);
@@ -53,28 +79,24 @@ export default function Dashboard() {
     return acc;
   }, {} as Record<string, number>);
 
-  const categoryData = useMemo(() => {
-    const entries = Object.entries(skillsByCategory)
-      .map(([name, value]) => ({ name, value }))
-      .filter(item => item.value > 0)
-      .sort((a, b) => b.value - a.value);
+  const entries = Object.entries(skillsByCategory)
+    .map(([name, value]) => ({ name, value }))
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
 
-    if (entries.length <= 6) return entries;
+  const categoryData = entries.length <= 6
+    ? entries
+    : [
+        ...entries.slice(0, 5),
+        { name: 'Other', value: entries.slice(5).reduce((sum, item) => sum + item.value, 0) },
+      ];
 
-    const head = entries.slice(0, 5);
-    const otherValue = entries.slice(5).reduce((sum, item) => sum + item.value, 0);
-    return [...head, { name: 'Other', value: otherValue }];
-  }, [skillsByCategory]);
+  const totalSkillsCount = categoryData.reduce((sum, item) => sum + item.value, 0);
 
-  const totalSkillsCount = useMemo(
-    () => categoryData.reduce((sum, item) => sum + item.value, 0),
-    [categoryData],
-  );
-
-  const pieChartData = useMemo(
-    () => categoryData.map((item, i) => ({ ...item, fill: CHART_COLORS[i % CHART_COLORS.length] })),
-    [categoryData],
-  );
+  const pieChartData = categoryData.map((item, i) => ({
+    ...item,
+    fill: CHART_COLORS[i % CHART_COLORS.length],
+  }));
 
   const totalExpenses = finance?.expenses
     ? finance.expenses.reduce((sum, e) => sum + (e.amount || 0), 0)

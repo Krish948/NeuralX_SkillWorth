@@ -8,6 +8,7 @@ import { useFinance } from '@/hooks/useFinance';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { getStorageItem, setStorageItem } from '@/lib/local-storage';
 
 type ChecklistItem = {
   label: string;
@@ -27,7 +28,7 @@ export default function OnboardingChecklist() {
 
   useEffect(() => {
     if (!user?.id) return;
-    setDismissed(window.localStorage.getItem(`${DISMISS_PREFIX}${user.id}`) === '1');
+    setDismissed(getStorageItem(`${DISMISS_PREFIX}${user.id}`) === '1');
   }, [user?.id]);
 
   const checklist = useMemo<ChecklistItem[]>(() => [
@@ -58,7 +59,7 @@ export default function OnboardingChecklist() {
 
   const handleDismiss = () => {
     if (user?.id) {
-      window.localStorage.setItem(`${DISMISS_PREFIX}${user.id}`, '1');
+      setStorageItem(`${DISMISS_PREFIX}${user.id}`, '1');
     }
     setDismissed(true);
   };

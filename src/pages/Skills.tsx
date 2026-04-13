@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Plus, X, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { StatePanel } from '@/components/ui/state-panel';
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -14,8 +15,8 @@ function getErrorMessage(err: unknown): string {
 }
 
 export default function Skills() {
-  const { data: allSkills = [] } = useAllSkills();
-  const { data: userSkills = [] } = useUserSkills();
+  const { data: allSkills = [], isLoading: allSkillsLoading, error: allSkillsError } = useAllSkills();
+  const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
   const addSkill = useAddUserSkill();
   const removeSkill = useRemoveUserSkill();
   const [selectedSkillId, setSelectedSkillId] = useState('');
@@ -42,6 +43,44 @@ export default function Skills() {
 
   const levelLabels = ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
   const categories = [...new Set(allSkills.map(s => s.category))];
+
+  if (allSkillsLoading || userSkillsLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading skills"
+          description="Preparing your skill catalog..."
+        />
+      </div>
+    );
+  }
+
+  if (allSkillsError || userSkillsError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load skills"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
+  if (allSkills.length === 0) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="empty"
+          title="No skills available"
+          description="Seed your skills catalog first, then return here to build your profile."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">

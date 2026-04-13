@@ -47,11 +47,48 @@ from (values
   ('Playwright', 'quality'),
   ('Machine Learning', 'data'),
   ('TensorFlow', 'data'),
+  ('PyTorch', 'data'),
+  ('NumPy', 'data'),
+  ('Pandas', 'data'),
+  ('Apache Spark', 'data'),
+  ('Snowflake', 'data'),
+  ('dbt', 'data'),
+  ('MLOps', 'data'),
+  ('LLMOps', 'data'),
+  ('Prompt Engineering', 'data'),
+  ('Natural Language Processing', 'data'),
+  ('Computer Vision', 'data'),
   ('Data Analysis', 'data'),
   ('Power BI', 'data'),
   ('Tableau', 'data'),
   ('Statistics', 'data'),
   ('Excel', 'data'),
+  ('React Native', 'mobile'),
+  ('Flutter', 'mobile'),
+  ('Swift', 'mobile'),
+  ('Kotlin', 'mobile'),
+  ('.NET', 'backend'),
+  ('ASP.NET Core', 'backend'),
+  ('FastAPI', 'backend'),
+  ('Microservices', 'backend'),
+  ('System Design', 'backend'),
+  ('Kafka', 'backend'),
+  ('RabbitMQ', 'backend'),
+  ('Jest', 'quality'),
+  ('Cypress', 'quality'),
+  ('Selenium', 'quality'),
+  ('SRE', 'devops'),
+  ('Observability', 'devops'),
+  ('Monitoring', 'devops'),
+  ('Grafana', 'devops'),
+  ('Prometheus', 'devops'),
+  ('OAuth', 'security'),
+  ('Threat Modeling', 'security'),
+  ('Risk Assessment', 'security'),
+  ('Wireframing', 'design'),
+  ('UX Research', 'design'),
+  ('Product Analytics', 'business'),
+  ('Jira', 'management'),
   ('Business Analysis', 'business'),
   ('Customer Research', 'business'),
   ('Copywriting', 'marketing'),
@@ -108,6 +145,16 @@ from (values
   ,('Support Engineer', array['Communication', 'Problem Solving', 'Documentation', 'Git', 'Incident Response']::text[], 65000, 105000, 'support')
   ,('Product Manager', array['Project Management', 'Stakeholder Management', 'Roadmapping', 'Customer Research', 'Communication']::text[], 110000, 175000, 'product')
   ,('Operations Manager', array['Project Management', 'Leadership', 'Time Management', 'Communication', 'Problem Solving']::text[], 85000, 140000, 'operations')
+  ,('AI Engineer', array['Python', 'Machine Learning', 'PyTorch', 'Prompt Engineering', 'MLOps']::text[], 120000, 190000, 'data')
+  ,('Data Engineer', array['Python', 'SQL', 'Apache Spark', 'Snowflake', 'dbt']::text[], 105000, 175000, 'data')
+  ,('Site Reliability Engineer', array['SRE', 'Linux', 'Kubernetes', 'Observability', 'Prometheus']::text[], 115000, 180000, 'devops')
+  ,('Cloud Architect', array['AWS', 'Azure', 'System Design', 'Terraform', 'Microservices']::text[], 130000, 200000, 'cloud')
+  ,('QA Automation Engineer', array['Testing', 'Cypress', 'Playwright', 'Jest', 'CI/CD']::text[], 80000, 130000, 'quality')
+  ,('Cybersecurity Analyst', array['Cybersecurity', 'Threat Modeling', 'Risk Assessment', 'Incident Response', 'OAuth']::text[], 90000, 145000, 'security')
+  ,('Mobile App Developer', array['React Native', 'Flutter', 'Kotlin', 'Swift', 'UI/UX Design']::text[], 90000, 150000, 'mobile')
+  ,('Solutions Architect', array['System Design', 'AWS', 'Azure', 'Microservices', 'Leadership']::text[], 125000, 195000, 'cloud')
+  ,('Scrum Master', array['Agile/Scrum', 'Jira', 'Stakeholder Management', 'Communication', 'Mentoring']::text[], 85000, 135000, 'management')
+  ,('UX Researcher', array['UX Research', 'Wireframing', 'Figma', 'Communication', 'Data Analysis']::text[], 75000, 125000, 'design')
 ) as v(role, required_skills, salary_min, salary_max, category)
 where not exists (
   select 1

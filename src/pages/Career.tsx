@@ -6,10 +6,37 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Briefcase, TrendingUp, Target, ArrowRight } from 'lucide-react';
 import { formatINR, formatINRRange } from '@/lib/currency';
+import { StatePanel } from '@/components/ui/state-panel';
 
 export default function Career() {
-  const { data: userSkills = [] } = useUserSkills();
-  const { data: jobs = [] } = useJobs();
+  const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
+  const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
+
+  if (userSkillsLoading || jobsLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading career insights"
+          description="Analyzing your profile and job matches..."
+        />
+      </div>
+    );
+  }
+
+  if (userSkillsError || jobsError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load career insights"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   const skillNames = userSkills.map(us => us.skills?.name).filter(Boolean) as string[];
   const salary = calculateSalaryFromSkills(skillNames);

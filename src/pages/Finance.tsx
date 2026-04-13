@@ -11,6 +11,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR } from '@/lib/currency';
+import { StatePanel } from '@/components/ui/state-panel';
 
 const EXPENSE_CATEGORIES = ['Housing', 'Food', 'Transport', 'Entertainment', 'Utilities', 'Healthcare', 'Education', 'Shopping', 'Other'];
 const PIE_COLORS = ['#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#94a3b8'];
@@ -22,7 +23,7 @@ function getErrorMessage(err: unknown): string {
 
 export default function Finance() {
   const isMobile = useIsMobile();
-  const { data: finance, isLoading } = useFinance();
+  const { data: finance, isLoading, error } = useFinance();
   const saveFinance = useSaveFinance();
 
   const [income, setIncome] = useState(0);
@@ -62,7 +63,31 @@ export default function Finance() {
     );
   };
 
-  if (isLoading) return <div className="text-center py-12 text-muted-foreground">Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading finance planner"
+          description="Preparing your salary and savings insights..."
+        />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load finance data"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useUserSkills } from '@/hooks/useUserSkills';
 import { useJobs } from '@/hooks/useJobs';
 import { useFinance } from '@/hooks/useFinance';
@@ -11,6 +12,11 @@ import OnboardingChecklist from '@/components/OnboardingChecklist';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact, formatINRRange } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
+import { getStorageJson, setStorageJson } from '@/lib/local-storage';
+import { getTopSkillRecommendations, getWeeklyActions } from '@/lib/phase2';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CHART_COLORS = [
   'hsl(160,84%,39%)',
@@ -35,9 +41,27 @@ const CHART_DOT_COLORS = [
 
 export default function Dashboard() {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
   const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
   const { data: finance, isLoading: financeLoading, error: financeError } = useFinance();
+  const [completedActions, setCompletedActions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setCompletedActions([]);
+      return;
+    }
+
+    const key = `skillworth:weekly-actions:${user.id}`;
+    setCompletedActions(getStorageJson<string[]>(key, []));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const key = `skillworth:weekly-actions:${user.id}`;
+    setStorageJson(key, completedActions);
+  }, [completedActions, user?.id]);
 
   if (userSkillsLoading || jobsLoading || financeLoading) {
     return (
@@ -66,6 +90,13 @@ export default function Dashboard() {
   }
 
   const skillNames = userSkills.map(us => us.skills?.name).filter(Boolean) as string[];
+  const skillRecommendations = getTopSkillRecommendations(skillNames, jobs, 3);
+  const weeklyActions = getWeeklyActions(skillNames, jobs, Boolean(finance));
+
+  const completedCount = weeklyActions.filter(action => completedActions.includes(action.id)).length;
+  const completionRate = weeklyActions.length > 0
+    ? Math.round((completedCount / weeklyActions.length) * 100)
+    : 0;
   const salary = calculateSalaryFromSkills(skillNames);
 
   const topJobs = jobs
@@ -119,38 +150,82 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Your career & financial overview</p>
+          <p className="text-muted-foreground mt-1">Mission-first view of your growth plan, job fit, and money momentum</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/simulation" className="text-xs sm:text-sm text-primary hover:underline">Compare plans →</Link>
+          <Link to="/finance" className="text-xs sm:text-sm text-primary hover:underline">Open finance →</Link>
         </div>
       </div>
 
       <OnboardingChecklist />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} className="border-border/50">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center flex-shrink-0`}>
-                <s.icon className="w-5 h-5 text-primary-foreground" />
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-display">Weekly Mission Control</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {stats.map(s => (
+                  <div key={s.label} className="rounded-lg border border-border/60 p-3">
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    <p className="text-lg font-display font-bold mt-1 truncate">{s.value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-display font-bold truncate">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+
+              <div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Weekly completion</span>
+                  <span className="font-medium">{completionRate}%</span>
+                </div>
+                <Progress value={completionRate} className="h-2 mt-1" />
+              </div>
+
+              <div className="space-y-3">
+                {weeklyActions.map(action => {
+                  const checked = completedActions.includes(action.id);
+
+                  return (
+                    <label key={action.id} className="flex items-start gap-3 rounded-lg border border-border/60 p-3 cursor-pointer">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) => {
+                          setCompletedActions(prev => {
+                            if (value === true) {
+                              return prev.includes(action.id) ? prev : [...prev, action.id];
+                            }
+                            return prev.filter(id => id !== action.id);
+                          });
+                        }}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium leading-tight">{action.title}</p>
+                          <Badge variant={action.impact === 'high' ? 'default' : 'secondary'} className="h-5 text-[10px]">
+                            {action.impact}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{action.detail}</p>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,.8fr)]">
-        <div className="space-y-6 min-w-0">
           <Card className="border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display flex items-center justify-between">
-                Top Job Matches
-                <Link to="/career" className="text-sm text-primary font-normal hover:underline">View all →</Link>
+                Opportunity Board
+                <Link to="/career" className="text-sm text-primary font-normal hover:underline">View all roles →</Link>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -193,7 +268,49 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="space-y-6 min-w-0">
+        <div className="space-y-6">
+          <Card className="border-border/50 gradient-finance text-primary-foreground">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-display text-primary-foreground">Growth Snapshot</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="rounded-lg bg-primary-foreground/15 px-3 py-2">
+                <p className="opacity-80 text-xs">Estimated annual salary</p>
+                <p className="text-xl font-display font-bold">{formatINR(salary.estimated)}</p>
+              </div>
+              <div className="rounded-lg bg-primary-foreground/15 px-3 py-2">
+                <p className="opacity-80 text-xs">Monthly savings trend</p>
+                <p className="text-lg font-display font-semibold">{formatINR(monthlySavings)}</p>
+              </div>
+              <p className="text-xs opacity-85">Momentum grows fastest when you complete weekly actions and add one high-impact skill.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-display">Recommended Next Skills</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {skillRecommendations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You already have the highest-priority mapped skills.</p>
+              ) : (
+                skillRecommendations.map(rec => (
+                  <div key={rec.skill} className="rounded-lg border border-border/60 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{rec.skill}</p>
+                      <span className="text-xs text-primary">+{formatINRCompact(rec.salaryBoost)}</span>
+                    </div>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {rec.reasons.map((reason, idx) => (
+                        <li key={`${rec.skill}-${idx}`}>• {reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display flex items-center justify-between">
@@ -242,15 +359,13 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  <div className="grid grid-cols-1 gap-2 mt-2">
                     {pieChartData.map((item, i) => {
                       const percent = totalSkillsCount > 0 ? Math.round((item.value / totalSkillsCount) * 100) : 0;
                       return (
                         <div key={item.name} className="flex items-center justify-between rounded-md border border-border/60 px-2.5 py-1.5 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span
-                              className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${CHART_DOT_COLORS[i % CHART_DOT_COLORS.length]}`}
-                            />
+                            <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${CHART_DOT_COLORS[i % CHART_DOT_COLORS.length]}`} />
                             <span className="truncate">{item.name}</span>
                           </div>
                           <span className="text-muted-foreground flex-shrink-0">{item.value} ({percent}%)</span>
@@ -262,9 +377,7 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-
         </div>
-
       </div>
     </div>
   );

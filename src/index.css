@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 25% 10%;
+
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.75rem;
+
+    --career: 160 84% 39%;
+    --career-foreground: 0 0% 100%;
+    --salary: 262 83% 58%;
+    --salary-foreground: 0 0% 100%;
+    --finance: 38 92% 50%;
+    --finance-foreground: 0 0% 100%;
+    --simulation: 199 89% 48%;
+    --simulation-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 160 84% 39%;
+  }
+
+  .dark {
+    --background: 224 30% 8%;
+    --foreground: 210 40% 95%;
+    --card: 224 25% 12%;
+    --card-foreground: 210 40% 95%;
+    --popover: 224 25% 12%;
+    --popover-foreground: 210 40% 95%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 20% 18%;
+    --secondary-foreground: 210 40% 95%;
+    --muted: 224 20% 18%;
+    --muted-foreground: 215 20% 60%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 224 20% 20%;
+    --input: 224 20% 20%;
+    --ring: 160 84% 39%;
+    --sidebar-background: 224 30% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 20% 15%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 224 20% 20%;
+    --sidebar-ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body,
+  #root {
+    min-height: 100vh;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    background-image:
+      radial-gradient(circle at top left, hsl(160 84% 39% / 0.08), transparent 32%),
+      radial-gradient(circle at top right, hsl(199 89% 48% / 0.08), transparent 28%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .gradient-career {
+    background: linear-gradient(135deg, hsl(var(--career)), hsl(160 84% 30%));
+  }
+  .gradient-salary {
+    background: linear-gradient(135deg, hsl(var(--salary)), hsl(280 83% 50%));
+  }
+  .gradient-finance {
+    background: linear-gradient(135deg, hsl(var(--finance)), hsl(25 92% 45%));
+  }
+  .gradient-simulation {
+    background: linear-gradient(135deg, hsl(var(--simulation)), hsl(210 89% 40%));
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(160 84% 39%), hsl(199 89% 48%));
+  }
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .page-shell {
+    @apply w-full min-w-0;
+  }
+}

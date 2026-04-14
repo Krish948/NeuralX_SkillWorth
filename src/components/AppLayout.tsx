@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LayoutDashboard, Sparkles, Briefcase, Wallet, FlaskConical, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Briefcase, Wallet, FlaskConical, LogOut, Menu, X, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/career', label: 'Career', icon: Briefcase },
   { to: '/finance', label: 'Finance', icon: Wallet },
   { to: '/simulation', label: 'Simulate', icon: FlaskConical },
+  { to: '/planner', label: 'Planner', icon: ClipboardList },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

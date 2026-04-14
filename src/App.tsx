@@ -14,6 +14,7 @@ const Skills = lazy(() => import("./pages/Skills"));
 const Career = lazy(() => import("./pages/Career"));
 const Finance = lazy(() => import("./pages/Finance"));
 const Simulation = lazy(() => import("./pages/Simulation"));
+const Planner = lazy(() => import("./pages/Planner"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/career" element={<ProtectedRoute><Career /></ProtectedRoute>} />
               <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
               <Route path="/simulation" element={<ProtectedRoute><Simulation /></ProtectedRoute>} />
+              <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

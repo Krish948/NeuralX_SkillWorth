@@ -1,24 +1,72 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUserSkills, useAllSkills } from '@/hooks/useUserSkills';
 import { useJobs } from '@/hooks/useJobs';
 import { getJobMatchScore, skillSalaryMap } from '@/data/skillsMapping';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { FlaskConical, Plus, X, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
 import { buildPlanInsights } from '@/lib/phase2';
+import { getStorageJson, setStorageJson } from '@/lib/local-storage';
+import type { SavedSimulationScenario } from '@/lib/phase3';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Simulation() {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
   const { data: allSkills = [], isLoading: allSkillsLoading, error: allSkillsError } = useAllSkills();
   const { data: jobs = [], isLoading: jobsLoading, error: jobsError } = useJobs();
   const [planASkills, setPlanASkills] = useState<string[]>([]);
   const [planBSkills, setPlanBSkills] = useState<string[]>([]);
+  const [scenarioName, setScenarioName] = useState('');
+  const [savedScenarios, setSavedScenarios] = useState<SavedSimulationScenario[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setSavedScenarios([]);
+      return;
+    }
+    const key = `skillworth:phase3:scenarios:${user.id}`;
+    setSavedScenarios(getStorageJson<SavedSimulationScenario[]>(key, []));
+  }, [user?.id]);
+
+  const persistScenarios = (next: SavedSimulationScenario[]) => {
+    if (!user?.id) return;
+    const key = `skillworth:phase3:scenarios:${user.id}`;
+    setSavedScenarios(next);
+    setStorageJson(key, next);
+  };
+
+  const saveScenario = () => {
+    if (!user?.id || (!planASkills.length && !planBSkills.length)) return;
+
+    const scenario: SavedSimulationScenario = {
+      id: `${Date.now()}`,
+      name: scenarioName.trim() || `Scenario ${savedScenarios.length + 1}`,
+      planASkills,
+      planBSkills,
+      createdAtIso: new Date().toISOString(),
+    };
+
+    const next = [scenario, ...savedScenarios].slice(0, 8);
+    persistScenarios(next);
+    setScenarioName('');
+  };
+
+  const loadScenario = (scenario: SavedSimulationScenario) => {
+    setPlanASkills(scenario.planASkills);
+    setPlanBSkills(scenario.planBSkills);
+  };
+
+  const deleteScenario = (id: string) => {
+    persistScenarios(savedScenarios.filter(s => s.id !== id));
+  };
 
   if (userSkillsLoading || allSkillsLoading || jobsLoading) {
     return (
@@ -144,6 +192,43 @@ export default function Simulation() {
               ))}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-display">Saved Scenarios</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder="Name this scenario"
+              value={scenarioName}
+              onChange={e => setScenarioName(e.target.value)}
+            />
+            <Button onClick={saveScenario} disabled={!planASkills.length && !planBSkills.length}>
+              Save Scenario
+            </Button>
+          </div>
+
+          {savedScenarios.length === 0 && (
+            <p className="text-xs text-muted-foreground">No saved scenarios yet. Save your first Plan A vs Plan B setup.</p>
+          )}
+
+          {savedScenarios.map(scenario => (
+            <div key={scenario.id} className="rounded-lg border border-border/60 p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium">{scenario.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  A: {scenario.planASkills.join(', ') || 'None'} | B: {scenario.planBSkills.join(', ') || 'None'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => loadScenario(scenario)}>Load</Button>
+                <Button size="sm" variant="ghost" onClick={() => deleteScenario(scenario.id)}>Delete</Button>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

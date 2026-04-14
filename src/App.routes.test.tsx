@@ -45,6 +45,7 @@ vi.mock("@/pages/Skills", () => ({ default: () => <div>Skills Page</div> }));
 vi.mock("@/pages/Career", () => ({ default: () => <div>Career Page</div> }));
 vi.mock("@/pages/Finance", () => ({ default: () => <div>Finance Page</div> }));
 vi.mock("@/pages/Simulation", () => ({ default: () => <div>Simulation Page</div> }));
+vi.mock("@/pages/Planner", () => ({ default: () => <div>Planner Page</div> }));
 vi.mock("@/pages/NotFound", () => ({ default: () => <div>Not Found</div> }));
 
 import App from "@/App";

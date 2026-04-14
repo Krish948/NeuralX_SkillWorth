@@ -61,11 +61,12 @@ Core user journey:
 - Interactive charts for skill distribution and salary impact.
 - Finance planner with expense tracking and goal progress.
 - Salary and finance values displayed in INR (rupees).
+- Phase 3 planner for learning paths, milestones, readiness gates, and savings projection.
 
 ## Demo Routes
 
 - Public: `/`, `/auth`
-- Protected: `/dashboard`, `/skills`, `/career`, `/finance`, `/simulation`
+- Protected: `/dashboard`, `/skills`, `/career`, `/finance`, `/simulation`, `/planner`
 
 ## Tech Stack
 

@@ -14,11 +14,12 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("react/") || id.includes("react-dom")) return "react-core";
+          if (id.includes("react/") || id.includes("react-dom")) return "vendor";
           if (id.includes("react-router") || id.includes("@tanstack/react-query")) return "app-vendor";
           if (id.includes("lucide-react")) return "icons";
           if (id.includes("date-fns")) return "date-utils";

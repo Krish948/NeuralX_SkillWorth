@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAllSkills, useUserSkills, useAddUserSkill, useRemoveUserSkill } from '@/hooks/useUserSkills';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,23 @@ export default function Skills() {
 
   const userSkillIds = userSkills.map(us => us.skill_id);
   const availableSkills = allSkills.filter(s => !userSkillIds.includes(s.id));
+  const groupedUserSkills = useMemo(
+    () =>
+      Object.entries(
+        userSkills.reduce<Record<string, typeof userSkills>>((groups, userSkill) => {
+          const category = userSkill.skills?.category || 'uncategorized';
+          if (!groups[category]) groups[category] = [];
+          groups[category].push(userSkill);
+          return groups;
+        }, {}),
+      )
+        .map(([category, skills]) => ({
+          category,
+          skills: skills.sort((a, b) => b.level - a.level || (a.skills?.name || '').localeCompare(b.skills?.name || '')),
+        }))
+        .sort((a, b) => b.skills.length - a.skills.length || a.category.localeCompare(b.category)),
+    [userSkills],
+  );
 
   const handleAdd = () => {
     if (!selectedSkillId) return;
@@ -150,30 +167,44 @@ export default function Skills() {
             <h2 className="text-lg font-display font-semibold">Current Skills</h2>
             <span className="text-sm text-muted-foreground">{userSkills.length} added</span>
           </div>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {userSkills.map(us => (
-              <Card key={us.id} className="panel-soft group">
-                <CardContent className="p-4 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{us.skills?.name}</p>
-                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{us.skills?.category}</Badge>
-                        <span className="text-[10px] text-muted-foreground">Lv.{us.level} – {levelLabels[us.level]}</span>
-                      </div>
-                    </div>
+          <div className="space-y-4">
+            {groupedUserSkills.map(group => (
+              <Card key={group.category} className="panel-soft overflow-hidden">
+                <CardHeader className="border-b border-border/50 bg-[linear-gradient(120deg,hsl(var(--primary)/0.08),transparent)] py-4">
+                  <CardTitle className="text-sm font-display flex items-center justify-between gap-3 capitalize">
+                    <span>{group.category}</span>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{group.skills.length} skills</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {group.skills.map(us => (
+                      <Card key={us.id} className="panel-soft group">
+                        <CardContent className="p-4 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <Sparkles className="w-4 h-4 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{us.skills?.name}</p>
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{us.skills?.category}</Badge>
+                                <span className="text-[10px] text-muted-foreground">Lv.{us.level} – {levelLabels[us.level]}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemove(us.id)}>
+                            <X className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemove(us.id)}>
-                    <X className="w-4 h-4 text-destructive" />
-                  </Button>
                 </CardContent>
               </Card>
             ))}
             {userSkills.length === 0 && (
-              <div className="col-span-full text-center py-12 text-muted-foreground rounded-xl border border-dashed border-border/70 bg-card/50">
+              <div className="text-center py-12 text-muted-foreground rounded-xl border border-dashed border-border/70 bg-card/50">
                 <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p>No skills added yet. Start building your portfolio above!</p>
               </div>

@@ -1,11 +1,17 @@
 import { calculateSalaryFromSkills, getJobMatchScore, skillSalaryMap } from '@/data/skillsMapping';
 import type { JobRow } from '@/hooks/useJobs';
+import { buildSkillGraphSignals } from '@/lib/skill-graph';
 
 export type SkillRecommendation = {
   skill: string;
   salaryBoost: number;
   demandCount: number;
   matchOpportunity: number;
+  missingPrerequisites: string[];
+  unlockedSkills: string[];
+  adjacentSkills: string[];
+  roleClusters: string[];
+  dependencyScore: number;
   score: number;
   reasons: string[];
 };
@@ -30,6 +36,7 @@ export function getTopSkillRecommendations(userSkills: string[], jobs: JobRow[],
   const recommendations = Object.entries(skillSalaryMap)
     .filter(([skill]) => !userSet.has(skill))
     .map(([skill, mapping]) => {
+      const graph = buildSkillGraphSignals(userSkills, skill, jobs);
       const demandCount = demandBySkill[skill] || 0;
       const matchOpportunity = jobs.reduce((count, job) => {
         const hasSkill = job.required_skills.includes(skill);
@@ -40,7 +47,8 @@ export function getTopSkillRecommendations(userSkills: string[], jobs: JobRow[],
       const score =
         mapping.salaryBoost * 0.45 +
         demandCount * 2200 +
-        matchOpportunity * 3000;
+        matchOpportunity * 3000 +
+        graph.dependencyScore * 900;
 
       const reasons = [
         `Potential salary uplift around ${Math.round(mapping.salaryBoost / 12)} per month`,
@@ -48,11 +56,28 @@ export function getTopSkillRecommendations(userSkills: string[], jobs: JobRow[],
         `Could improve ${matchOpportunity} near-match job${matchOpportunity === 1 ? '' : 's'}`,
       ];
 
+      if (graph.unlockedSkills.length > 0) {
+        reasons.push(`Unlocks ${graph.unlockedSkills.slice(0, 2).join(', ')} as next dependencies`);
+      }
+
+      if (graph.roleClusters.length > 0) {
+        reasons.push(`Strengthens ${graph.roleClusters.slice(0, 2).join(' and ')} cluster coverage`);
+      }
+
+      if (graph.missingPrerequisites.length > 0) {
+        reasons.push(`Needs prerequisites first: ${graph.missingPrerequisites.slice(0, 2).join(', ')}`);
+      }
+
       return {
         skill,
         salaryBoost: mapping.salaryBoost,
         demandCount,
         matchOpportunity,
+        missingPrerequisites: graph.missingPrerequisites,
+        unlockedSkills: graph.unlockedSkills,
+        adjacentSkills: graph.adjacentSkills,
+        roleClusters: graph.roleClusters,
+        dependencyScore: graph.dependencyScore,
         score,
         reasons,
       };

@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Radar, Layers, Sparkles, Target, TrendingUp, ArrowRight, Search } from 'lucide-react';
 import { formatINR, formatINRRange } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
+import { buildSkillDependencyGraph, getRoleClusterInsights, getSkillPrerequisites } from '@/lib/skill-graph';
+import { SkillGraphMap } from '@/components/SkillGraphMap';
 
 export default function Career() {
   const { data: userSkills = [], isLoading: userSkillsLoading, error: userSkillsError } = useUserSkills();
@@ -19,34 +21,30 @@ export default function Career() {
   const [roleSearch, setRoleSearch] = useState('');
   const [demandSearch, setDemandSearch] = useState('');
   const [pathSearch, setPathSearch] = useState('');
-
-  if (userSkillsLoading || jobsLoading) {
-    return (
-      <div className="page-shell">
-        <StatePanel
-          type="loading"
-          title="Loading career command center"
-          description="Mapping role fit, skill demand, and pathway momentum..."
-        />
-      </div>
-    );
-  }
-
-  if (userSkillsError || jobsError) {
-    return (
-      <div className="page-shell">
-        <StatePanel
-          type="error"
-          title="Could not load career insights"
-          description="Please refresh and try again."
-          actionLabel="Reload"
-          onAction={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
+  const [selectedGraphSkills, setSelectedGraphSkills] = useState<string[]>([]);
+  const [graphMatchMode, setGraphMatchMode] = useState<'any' | 'all'>('any');
 
   const skillNames = userSkills.map(us => us.skills?.name).filter(Boolean) as string[];
+  const skillGroups = useMemo(
+    () =>
+      Object.entries(
+        userSkills.reduce<Record<string, { name: string; level: number }[]>>((groups, userSkill) => {
+          const skillName = userSkill.skills?.name;
+          if (!skillName) return groups;
+
+          const category = userSkill.skills?.category || 'uncategorized';
+          if (!groups[category]) groups[category] = [];
+          groups[category].push({ name: skillName, level: userSkill.level });
+          return groups;
+        }, {}),
+      )
+        .map(([category, skills]) => ({
+          category,
+          skills: skills.sort((a, b) => b.level - a.level || a.name.localeCompare(b.name)),
+        }))
+        .sort((a, b) => b.skills.length - a.skills.length || a.category.localeCompare(b.category)),
+    [userSkills],
+  );
   const salary = calculateSalaryFromSkills(skillNames);
 
   const jobMatches = useMemo(
@@ -84,12 +82,25 @@ export default function Career() {
     [filteredMatches, roleSearch],
   );
 
-  const roleSpotlight = roleFilteredMatches[0];
+  const graphFilteredMatches = useMemo(
+    () =>
+      selectedGraphSkills.length > 0
+        ? roleFilteredMatches.filter(job => {
+            if (graphMatchMode === 'all') {
+              return selectedGraphSkills.every(skill => job.required_skills.includes(skill));
+            }
+            return selectedGraphSkills.some(skill => job.required_skills.includes(skill));
+          })
+        : roleFilteredMatches,
+    [graphMatchMode, roleFilteredMatches, selectedGraphSkills],
+  );
+
+  const roleSpotlight = graphFilteredMatches[0];
 
   const demandGaps = useMemo(() => {
     const demandBySkill: Record<string, number> = {};
 
-    roleFilteredMatches.forEach(job => {
+    graphFilteredMatches.forEach(job => {
       job.gaps.forEach(skill => {
         demandBySkill[skill] = (demandBySkill[skill] || 0) + 1;
       });
@@ -99,7 +110,7 @@ export default function Career() {
       .map(([skill, demand]) => ({ skill, demand }))
       .sort((a, b) => b.demand - a.demand)
       .slice(0, 8);
-  }, [roleFilteredMatches]);
+  }, [graphFilteredMatches]);
 
   const visibleDemandGaps = useMemo(
     () =>
@@ -128,6 +139,23 @@ export default function Career() {
     [skillNames],
   );
 
+  const roleClusters = useMemo(
+    () => getRoleClusterInsights(skillNames).slice(0, 3),
+    [skillNames],
+  );
+
+  const dependencyHotspots = useMemo(() => {
+    const missingSet = new Set(demandGaps.map(item => item.skill));
+
+    return demandGaps
+      .map(item => ({
+        skill: item.skill,
+        prerequisites: getSkillPrerequisites(item.skill).filter(prerequisite => !skillNames.includes(prerequisite)),
+      }))
+      .filter(item => item.prerequisites.length > 0 && missingSet.has(item.skill))
+      .slice(0, 4);
+  }, [demandGaps, skillNames]);
+
   const visiblePaths = useMemo(
     () =>
       suggestedPaths.filter(path =>
@@ -140,9 +168,54 @@ export default function Career() {
 
   const selectedPath = visiblePaths.find(path => path.key === activePath) || visiblePaths[0];
 
-  const highMatchCount = roleFilteredMatches.filter(job => job.match >= 75).length;
-  const mediumMatchCount = roleFilteredMatches.filter(job => job.match >= 50 && job.match < 75).length;
-  const lowMatchCount = roleFilteredMatches.filter(job => job.match < 50).length;
+  const graphSeeds = useMemo(() => {
+    const pathCandidates = selectedPath?.missing.slice(0, 3) || [];
+    const demandCandidates = demandGaps.slice(0, 3).map(item => item.skill);
+    return Array.from(new Set([...pathCandidates, ...demandCandidates]));
+  }, [demandGaps, selectedPath]);
+
+  const dependencyGraph = useMemo(
+    () => buildSkillDependencyGraph(skillNames, graphSeeds),
+    [graphSeeds, skillNames],
+  );
+
+  const toggleGraphSkill = (skill: string) => {
+    setSelectedGraphSkills(prev =>
+      prev.includes(skill)
+        ? prev.filter(current => current !== skill)
+        : [...prev, skill],
+    );
+  };
+
+  const highMatchCount = graphFilteredMatches.filter(job => job.match >= 75).length;
+  const mediumMatchCount = graphFilteredMatches.filter(job => job.match >= 50 && job.match < 75).length;
+  const lowMatchCount = graphFilteredMatches.filter(job => job.match < 50).length;
+
+  if (userSkillsLoading || jobsLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading career command center"
+          description="Mapping role fit, skill demand, and pathway momentum..."
+        />
+      </div>
+    );
+  }
+
+  if (userSkillsError || jobsError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load career insights"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
@@ -170,7 +243,7 @@ export default function Career() {
             </div>
             <div className="rounded-2xl border border-border/60 bg-card/90 p-3 col-span-2">
               <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Active roles</p>
-              <p className="text-2xl font-display font-bold mt-2">{roleFilteredMatches.length}</p>
+              <p className="text-2xl font-display font-bold mt-2">{graphFilteredMatches.length}</p>
             </div>
           </div>
         </div>
@@ -189,6 +262,41 @@ export default function Career() {
           ))}
         </div>
       </section>
+
+      <Card className="panel-soft overflow-hidden">
+        <CardHeader className="border-b border-border/50 bg-[linear-gradient(120deg,hsl(var(--career)/0.12),transparent)]">
+          <CardTitle className="text-lg font-display flex items-center gap-2">
+            <Layers className="w-5 h-5 text-primary" /> Skill Categories
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-5">
+          {skillGroups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Add a few skills first, then the app will group them here by category.</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {skillGroups.map(group => (
+                <div key={group.category} className="rounded-2xl border border-border/60 bg-card/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{group.category}</p>
+                      <p className="text-sm font-semibold mt-1">{group.skills.length} skill{group.skills.length === 1 ? '' : 's'}</p>
+                    </div>
+                    <Badge variant="secondary" className="capitalize">{group.category}</Badge>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {group.skills.map(skill => (
+                      <Badge key={`${group.category}-${skill.name}`} variant="outline" className="text-[10px] px-2 py-0.5 capitalize">
+                        {skill.name} · Lv.{skill.level}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
         <div className="space-y-6 min-w-0">
@@ -242,8 +350,39 @@ export default function Career() {
                 />
               </div>
 
+              {selectedGraphSkills.length > 0 && (
+                <div className="space-y-2 rounded-xl border border-border/60 bg-muted/25 p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Graph filters: <span className="text-foreground font-medium">{selectedGraphSkills.join(', ')}</span>
+                    </p>
+                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setSelectedGraphSkills([])}>
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="sm"
+                      variant={graphMatchMode === 'any' ? 'default' : 'outline'}
+                      className="h-7 text-[11px]"
+                      onClick={() => setGraphMatchMode('any')}
+                    >
+                      Match any
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={graphMatchMode === 'all' ? 'default' : 'outline'}
+                      className="h-7 text-[11px]"
+                      onClick={() => setGraphMatchMode('all')}
+                    >
+                      Match all
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
-                {roleFilteredMatches.map(job => (
+                {graphFilteredMatches.map(job => (
                   <article key={job.id} className="rounded-2xl border border-border/60 bg-background/70 p-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -255,6 +394,9 @@ export default function Career() {
                       </Badge>
                     </div>
                     <Progress value={job.match} className="h-1.5 mt-2" />
+                    {selectedGraphSkills.length > 0 && selectedGraphSkills.some(skill => job.required_skills.includes(skill)) && (
+                      <p className="text-[11px] text-primary mt-2">Impacted by selected graph skill</p>
+                    )}
                     {job.gaps.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {job.gaps.slice(0, 4).map(gap => (
@@ -266,7 +408,7 @@ export default function Career() {
                     )}
                   </article>
                 ))}
-                {roleFilteredMatches.length === 0 && (
+                {graphFilteredMatches.length === 0 && (
                   <p className="text-xs text-muted-foreground">No roles match your search.</p>
                 )}
               </div>
@@ -390,13 +532,60 @@ export default function Career() {
 
           <Card className="panel-soft">
             <CardHeader>
+              <CardTitle className="text-lg font-display">Skill Graph Intelligence</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {roleClusters.map(cluster => (
+                <div key={cluster.id} className="rounded-xl border border-border/60 p-3 bg-muted/20">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">{cluster.label}</p>
+                    <Badge variant="secondary">{cluster.completion}%</Badge>
+                  </div>
+                  <Progress value={cluster.completion} className="h-1.5 mt-2" />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Missing: {cluster.missingSkills.slice(0, 3).join(', ') || 'None'}
+                  </p>
+                </div>
+              ))}
+
+              {dependencyHotspots.length > 0 && (
+                <div className="rounded-xl border border-border/60 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Dependency hotspots</p>
+                  <div className="mt-2 space-y-1.5">
+                    {dependencyHotspots.map(item => (
+                      <p key={item.skill} className="text-xs text-muted-foreground">
+                        <span className="text-foreground font-medium">{item.skill}</span> needs {item.prerequisites.slice(0, 2).join(', ')}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-border/60 p-3 bg-background/70">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Dependency graph</p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Targets are generated from pathway gaps and top demand skills.
+                </p>
+                <div className="mt-3">
+                  <SkillGraphMap
+                    graph={dependencyGraph}
+                    selectedSkills={selectedGraphSkills}
+                    onToggleSkill={toggleGraphSkill}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="panel-soft">
+            <CardHeader>
               <CardTitle className="text-lg font-display">Career Snapshot</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg border border-border/60 p-3">
                   <p className="text-[11px] text-muted-foreground">Focused</p>
-                  <p className="text-lg font-bold">{roleFilteredMatches.length}</p>
+                  <p className="text-lg font-bold">{graphFilteredMatches.length}</p>
                 </div>
                 <div className="rounded-lg border border-border/60 p-3">
                   <p className="text-[11px] text-muted-foreground">Demand</p>

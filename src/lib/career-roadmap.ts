@@ -18,6 +18,11 @@ export interface LearningPlanItem {
   estimatedSalaryBoost: number;
   recommendedHours: number;
   weeklyHoursTarget: number;
+  missingPrerequisites: string[];
+  unlockedSkills: string[];
+  adjacentSkills: string[];
+  roleClusters: string[];
+  dependencyScore: number;
   resources: LearningResource[];
 }
 
@@ -131,6 +136,11 @@ export function buildLearningPlan(userSkills: string[], jobs: JobRow[], weeklyHo
       estimatedSalaryBoost: recommendation.salaryBoost,
       recommendedHours,
       weeklyHoursTarget,
+      missingPrerequisites: recommendation.missingPrerequisites,
+      unlockedSkills: recommendation.unlockedSkills,
+      adjacentSkills: recommendation.adjacentSkills,
+      roleClusters: recommendation.roleClusters,
+      dependencyScore: recommendation.dependencyScore,
       resources: getResourcesForSkill(recommendation.skill),
     };
   });

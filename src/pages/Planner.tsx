@@ -108,32 +108,6 @@ export default function Planner() {
     ? getStorageItem(storageKey(user.id, 'last-active'))
     : null;
 
-  if (userSkillsLoading || jobsLoading || financeLoading) {
-    return (
-      <div className="page-shell">
-        <StatePanel
-          type="loading"
-          title="Loading execution studio"
-          description="Compiling milestones, readiness, and money forecasts..."
-        />
-      </div>
-    );
-  }
-
-  if (userSkillsError || jobsError || financeError) {
-    return (
-      <div className="page-shell">
-        <StatePanel
-          type="error"
-          title="Could not load planner"
-          description="Please refresh and try again."
-          actionLabel="Reload"
-          onAction={() => window.location.reload()}
-        />
-      </div>
-    );
-  }
-
   const selectedJob = jobs.find(job => job.id === targetRoleId) || jobs[0] || null;
   const readiness = getRoleReadiness(skillNames, selectedJob);
   const adaptivePlan = useMemo(
@@ -243,6 +217,32 @@ export default function Planner() {
       ),
     );
   };
+
+  if (userSkillsLoading || jobsLoading || financeLoading) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="loading"
+          title="Loading execution studio"
+          description="Compiling milestones, readiness, and money forecasts..."
+        />
+      </div>
+    );
+  }
+
+  if (userSkillsError || jobsError || financeError) {
+    return (
+      <div className="page-shell">
+        <StatePanel
+          type="error"
+          title="Could not load planner"
+          description="Please refresh and try again."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
@@ -383,6 +383,44 @@ export default function Planner() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Badge variant="outline">{Math.round(item.urgencyScore)} urgency</Badge>
                       <Badge variant="secondary">+{formatINRCompact(item.estimatedSalaryBoost)}/yr</Badge>
+                      {item.dependencyScore > 0 && <Badge variant="outline">graph +{item.dependencyScore}</Badge>}
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Dependencies</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {item.missingPrerequisites.length === 0 ? (
+                            <Badge variant="secondary" className="text-[10px]">Prerequisites met</Badge>
+                          ) : (
+                            item.missingPrerequisites.map(prereq => (
+                              <Badge key={`${item.skill}-prereq-${prereq}`} variant="outline" className="text-[10px]">
+                                missing {prereq}
+                              </Badge>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {(item.unlockedSkills.length > 0 || item.roleClusters.length > 0 || item.adjacentSkills.length > 0) && (
+                        <div className="space-y-1.5">
+                          {item.unlockedSkills.length > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Unlocks next: <span className="text-foreground font-medium">{item.unlockedSkills.slice(0, 3).join(', ')}</span>
+                            </p>
+                          )}
+                          {item.roleClusters.length > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Cluster impact: <span className="text-foreground font-medium">{item.roleClusters.slice(0, 2).join(' · ')}</span>
+                            </p>
+                          )}
+                          {item.adjacentSkills.length > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Adjacent options: {item.adjacentSkills.slice(0, 3).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 grid gap-2">

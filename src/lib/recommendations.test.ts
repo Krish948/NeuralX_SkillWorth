@@ -6,7 +6,7 @@ import {
   buildMilestonesFromPlan,
   getRoleReadiness,
   mergeMilestones,
-} from '@/lib/phase3';
+} from '@/lib/career-roadmap';
 import type { JobRow } from '@/hooks/useJobs';
 
 const jobs: JobRow[] = [
@@ -28,7 +28,7 @@ const jobs: JobRow[] = [
   },
 ];
 
-describe('phase3', () => {
+describe('career-roadmap', () => {
   it('builds a prioritized learning plan', () => {
     const plan = buildLearningPlan(['React'], jobs, 6, 3);
 

@@ -27,10 +27,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top nav */}
-      <header className="sticky top-0 z-50 glass border-b">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl">
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 gap-2">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-hero flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg gradient-hero hover-glow flex items-center justify-center shadow-sm">
               <Sparkles className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="font-display font-bold text-lg sm:text-xl text-foreground">SkillWorth</span>
@@ -44,8 +44,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  className={`nav-pill flex items-center gap-2 ${
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary/40'
+                      : 'text-muted-foreground hover:text-foreground hover:border-border hover:bg-card/70'
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -68,7 +70,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile nav */}
         {mobileOpen && (
-          <nav className="md:hidden border-t bg-card p-4 flex flex-col gap-1">
+          <nav className="md:hidden border-t border-border/60 bg-card/95 p-4 flex flex-col gap-1 backdrop-blur-xl">
             {navItems.map(item => {
               const active = location.pathname === item.to;
               return (
@@ -77,7 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
                   }`}
                 >
                   <item.icon className="w-4 h-4" />

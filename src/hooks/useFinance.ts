@@ -4,8 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface ExpenseItem {
+  id?: string;
   category: string;
   amount: number;
+  date?: string;
+  note?: string;
+  paymentMode?: 'UPI' | 'Card' | 'Cash' | 'Bank Transfer' | 'Auto Debit';
+  isRecurring?: boolean;
 }
 
 export interface FinanceRow {

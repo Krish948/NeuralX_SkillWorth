@@ -1,4 +1,4 @@
-import type { RoleReadiness, LearningMilestone, LearningPlanItem, MilestoneStatus } from '@/lib/phase3';
+import type { RoleReadiness, LearningMilestone, LearningPlanItem, MilestoneStatus } from '@/lib/career-roadmap';
 
 export type AdaptivePlanStatus = MilestoneStatus | 'untracked';
 

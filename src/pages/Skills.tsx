@@ -84,15 +84,31 @@ export default function Skills() {
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Your Skills</h1>
-          <p className="text-muted-foreground mt-1">Add and manage your skill portfolio</p>
+      <section className="page-hero">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Skill Matrix</Badge>
+              <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Build your portfolio</Badge>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mt-4">Your skills, organized like a working portfolio.</h1>
+            <p className="text-muted-foreground mt-3 max-w-2xl">Add, review, and tune your skills so the rest of the app can map them into career and finance outcomes.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[260px]">
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-3">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Added</p>
+              <p className="text-2xl font-display font-bold mt-2">{userSkills.length}</p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-3">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Categories</p>
+              <p className="text-2xl font-display font-bold mt-2">{categories.length}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(300px,390px)_minmax(0,1fr)]">
-        <Card className="border-border/50 xl:sticky xl:top-24 self-start">
+        <Card className="panel-soft xl:sticky xl:top-24 self-start">
           <CardHeader>
             <CardTitle className="text-lg font-display flex items-center gap-2">
               <Plus className="w-5 h-5 text-primary" /> Add a Skill
@@ -136,7 +152,7 @@ export default function Skills() {
           </div>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {userSkills.map(us => (
-              <Card key={us.id} className="border-border/50 group">
+              <Card key={us.id} className="panel-soft group">
                 <CardContent className="p-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

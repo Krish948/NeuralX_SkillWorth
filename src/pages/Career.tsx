@@ -146,28 +146,31 @@ export default function Career() {
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
-      <section className="rounded-2xl border border-border/50 p-5 sm:p-7 bg-[linear-gradient(130deg,hsl(var(--career)/0.16),hsl(var(--simulation)/0.06))]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section className="page-hero">
+        <div className="relative z-10 grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,360px)] lg:items-end">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Career Command Center</p>
-            <h1 className="text-3xl sm:text-4xl font-display font-bold mt-2">Design Your Next Move</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
-              Explore role fit, skill demand, and pathway readiness in one tactical screen.
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Career Command Center</Badge>
+              <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Role radar</Badge>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mt-4">Design your next move with clearer signals.</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-3 max-w-2xl">
+              Compare role fit, reveal skill demand, and map the pathway that gets you to the next level faster.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full lg:w-auto lg:grid-cols-3">
-            <div className="rounded-xl border border-border/60 bg-card/80 p-3 min-w-[140px]">
-              <p className="text-[11px] text-muted-foreground">Skill Portfolio</p>
-              <p className="text-xl font-bold font-display mt-1">{skillNames.length}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-3">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Skill portfolio</p>
+              <p className="text-2xl font-display font-bold mt-2">{skillNames.length}</p>
             </div>
-            <div className="rounded-xl border border-border/60 bg-card/80 p-3 min-w-[140px]">
-              <p className="text-[11px] text-muted-foreground">Salary Estimate</p>
-              <p className="text-xl font-bold font-display mt-1">{formatINR(salary.estimated)}</p>
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-3">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Salary estimate</p>
+              <p className="text-2xl font-display font-bold mt-2">{formatINR(salary.estimated)}</p>
             </div>
-            <div className="rounded-xl border border-border/60 bg-card/80 p-3 min-w-[140px] col-span-2 sm:col-span-1">
-              <p className="text-[11px] text-muted-foreground">Active Roles</p>
-              <p className="text-xl font-bold font-display mt-1">{roleFilteredMatches.length}</p>
+            <div className="rounded-2xl border border-border/60 bg-card/90 p-3 col-span-2">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Active roles</p>
+              <p className="text-2xl font-display font-bold mt-2">{roleFilteredMatches.length}</p>
             </div>
           </div>
         </div>
@@ -187,90 +190,90 @@ export default function Career() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <Card className="border-border/50 overflow-hidden">
-          <CardHeader className="bg-[linear-gradient(120deg,hsl(var(--career)/0.12),transparent)] border-b border-border/50">
-            <CardTitle className="text-lg font-display flex items-center gap-2">
-              <Radar className="w-5 h-5 text-primary" /> Role Radar
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-5 space-y-3">
-            {roleSpotlight ? (
-              <div className="rounded-xl border border-border/60 p-4 bg-card/80">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Role spotlight</p>
-                    <p className="text-xl font-bold font-display mt-1">{roleSpotlight.role}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatINRRange(roleSpotlight.salary_min, roleSpotlight.salary_max)}</p>
-                  </div>
-                  <Badge variant={roleSpotlight.match >= 75 ? 'default' : 'secondary'} className="text-xs">
-                    {roleSpotlight.match}% ready
-                  </Badge>
-                </div>
-                <Progress value={roleSpotlight.match} className="h-2 mt-3" />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No roles match this filter yet.</p>
-            )}
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-border/60 p-3 text-center">
-                <p className="text-[11px] text-muted-foreground">High</p>
-                <p className="text-lg font-bold text-primary">{highMatchCount}</p>
-              </div>
-              <div className="rounded-lg border border-border/60 p-3 text-center">
-                <p className="text-[11px] text-muted-foreground">Medium</p>
-                <p className="text-lg font-bold">{mediumMatchCount}</p>
-              </div>
-              <div className="rounded-lg border border-border/60 p-3 text-center">
-                <p className="text-[11px] text-muted-foreground">Low</p>
-                <p className="text-lg font-bold text-muted-foreground">{lowMatchCount}</p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                value={roleSearch}
-                onChange={e => setRoleSearch(e.target.value)}
-                placeholder="Search roles in radar"
-                className="pl-9"
-              />
-            </div>
-
-            <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
-              {roleFilteredMatches.map(job => (
-                <article key={job.id} className="rounded-lg border border-border/60 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)]">
+        <div className="space-y-6 min-w-0">
+          <Card className="panel-soft overflow-hidden">
+            <CardHeader className="bg-[linear-gradient(120deg,hsl(var(--career)/0.12),transparent)] border-b border-border/50">
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Radar className="w-5 h-5 text-primary" /> Role Radar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-5 space-y-3">
+              {roleSpotlight ? (
+                <div className="rounded-xl border border-border/60 p-4 bg-card/80">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-semibold">{job.role}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{formatINRRange(job.salary_min, job.salary_max)}</p>
+                      <p className="text-xs text-muted-foreground">Role spotlight</p>
+                      <p className="text-xl font-bold font-display mt-1">{roleSpotlight.role}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{formatINRRange(roleSpotlight.salary_min, roleSpotlight.salary_max)}</p>
                     </div>
-                    <Badge variant={job.match >= 75 ? 'default' : job.match >= 50 ? 'secondary' : 'outline'}>
-                      {job.match}%
+                    <Badge variant={roleSpotlight.match >= 75 ? 'default' : 'secondary'} className="text-xs">
+                      {roleSpotlight.match}% ready
                     </Badge>
                   </div>
-                  <Progress value={job.match} className="h-1.5 mt-2" />
-                  {job.gaps.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {job.gaps.slice(0, 4).map(gap => (
-                        <Badge key={`${job.id}-${gap}`} variant="outline" className="text-[10px] px-1.5 py-0">
-                          {gap}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              ))}
-              {roleFilteredMatches.length === 0 && (
-                <p className="text-xs text-muted-foreground">No roles match your search.</p>
+                  <Progress value={roleSpotlight.match} className="h-2 mt-3" />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No roles match this filter yet.</p>
               )}
-            </div>
-          </CardContent>
-        </Card>
 
-        <div className="space-y-6">
-          <Card className="border-border/50">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-border/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">High</p>
+                  <p className="text-lg font-bold text-primary">{highMatchCount}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Medium</p>
+                  <p className="text-lg font-bold">{mediumMatchCount}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3 text-center">
+                  <p className="text-[11px] text-muted-foreground">Low</p>
+                  <p className="text-lg font-bold text-muted-foreground">{lowMatchCount}</p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={roleSearch}
+                  onChange={e => setRoleSearch(e.target.value)}
+                  placeholder="Search roles in radar"
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
+                {roleFilteredMatches.map(job => (
+                  <article key={job.id} className="rounded-2xl border border-border/60 bg-background/70 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">{job.role}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{formatINRRange(job.salary_min, job.salary_max)}</p>
+                      </div>
+                      <Badge variant={job.match >= 75 ? 'default' : job.match >= 50 ? 'secondary' : 'outline'}>
+                        {job.match}%
+                      </Badge>
+                    </div>
+                    <Progress value={job.match} className="h-1.5 mt-2" />
+                    {job.gaps.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {job.gaps.slice(0, 4).map(gap => (
+                          <Badge key={`${job.id}-${gap}`} variant="outline" className="text-[10px] px-1.5 py-0">
+                            {gap}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+                {roleFilteredMatches.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No roles match your search.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="panel-soft">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">
                 <Layers className="w-5 h-5 text-primary" /> Skill Demand Heatmap
@@ -288,7 +291,7 @@ export default function Career() {
               </div>
               {visibleDemandGaps.length === 0 && <p className="text-sm text-muted-foreground">No demand items match the current filters.</p>}
               {visibleDemandGaps.map(item => (
-                <div key={item.skill} className="rounded-lg border border-border/60 p-3">
+                <div key={item.skill} className="rounded-2xl border border-border/60 bg-muted/20 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium">{item.skill}</p>
                     <p className="text-xs text-muted-foreground">{item.demand} roles</p>
@@ -298,8 +301,10 @@ export default function Career() {
               ))}
             </CardContent>
           </Card>
+        </div>
 
-          <Card className="border-border/50">
+        <aside className="space-y-6 lg:sticky lg:top-24 self-start">
+          <Card className="panel-soft">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">
                 <Target className="w-5 h-5 text-primary" /> Pathway Explorer
@@ -322,7 +327,7 @@ export default function Career() {
                     variant={path.key === selectedPath?.key ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActivePath(path.key)}
-                    className="text-xs"
+                    className="text-xs hover-glow"
                   >
                     {path.key}
                   </Button>
@@ -334,7 +339,7 @@ export default function Career() {
               )}
 
               {selectedPath && (
-                <div className="rounded-xl border border-border/60 p-4 bg-muted/20">
+                <div className="rounded-2xl border border-border/60 p-4 bg-muted/20">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-sm">{selectedPath.title}</p>
                     <Badge variant="secondary">{selectedPath.progress}% complete</Badge>
@@ -370,7 +375,7 @@ export default function Career() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 gradient-career text-career-foreground">
+          <Card className="gradient-career hover-glow text-career-foreground border-border/50">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <TrendingUp className="w-5 h-5 mt-0.5" />
@@ -382,7 +387,32 @@ export default function Career() {
               </div>
             </CardContent>
           </Card>
-        </div>
+
+          <Card className="panel-soft">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Career Snapshot</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground">Focused</p>
+                  <p className="text-lg font-bold">{roleFilteredMatches.length}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground">Demand</p>
+                  <p className="text-lg font-bold">{visibleDemandGaps.length}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground">Paths</p>
+                  <p className="text-lg font-bold">{visiblePaths.length}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Use the left column to filter roles and demand, then use this rail to inspect the most realistic pathway and compensation range.
+              </p>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
     </div>
   );

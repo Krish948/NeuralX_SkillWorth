@@ -1,5 +1,5 @@
 import { calculateSalaryFromSkills, getJobMatchScore, skillSalaryMap } from '@/data/skillsMapping';
-import { getTopSkillRecommendations } from '@/lib/phase2';
+import { getTopSkillRecommendations } from '@/lib/recommendations';
 import type { JobRow } from '@/hooks/useJobs';
 
 export type ResourceType = 'course' | 'project' | 'article';

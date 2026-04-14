@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact, formatINRRange } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
 import { getStorageJson, setStorageJson } from '@/lib/local-storage';
-import { getTopSkillRecommendations, getWeeklyActions } from '@/lib/phase2';
+import { getTopSkillRecommendations, getWeeklyActions } from '@/lib/recommendations';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -150,49 +150,72 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Mission-first view of your growth plan, job fit, and money momentum</p>
+      <section className="page-hero">
+        <div className="relative z-10 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,360px)] lg:items-end">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Mission Control</Badge>
+              <Badge variant="outline" className="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em]">Weekly view</Badge>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold mt-4">One place for skill, career, and money momentum.</h1>
+            <p className="text-muted-foreground mt-3 max-w-2xl">
+              See what matters this week, what role you are closest to, and how each action changes your salary and savings path.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-4 sm:p-5 shadow-sm">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Quick links</p>
+            <div className="mt-3 grid gap-2">
+              <Link to="/simulation" className="rounded-xl border border-border/60 px-3 py-2.5 text-sm font-medium hover:bg-muted/60 transition-colors">Compare plans →</Link>
+              <Link to="/finance" className="rounded-xl border border-border/60 px-3 py-2.5 text-sm font-medium hover:bg-muted/60 transition-colors">Open finance →</Link>
+              <Link to="/skills" className="rounded-xl border border-border/60 px-3 py-2.5 text-sm font-medium hover:bg-muted/60 transition-colors">Review skills →</Link>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link to="/simulation" className="text-xs sm:text-sm text-primary hover:underline">Compare plans →</Link>
-          <Link to="/finance" className="text-xs sm:text-sm text-primary hover:underline">Open finance →</Link>
-        </div>
-      </div>
+      </section>
 
       <OnboardingChecklist />
 
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
-          <Card className="border-border/50">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map(s => (
+          <Card key={s.label} className="panel-soft">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center flex-shrink-0`}>
+                  <s.icon className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{s.label}</p>
+                  <p className="text-xl font-display font-bold mt-1 truncate">{s.value}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_340px]">
+        <div className="space-y-6 min-w-0">
+          <Card className="panel-soft">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-display">Weekly Mission Control</CardTitle>
+              <CardTitle className="text-lg font-display flex items-center justify-between">
+                Weekly Mission Control
+                <Link to="/planner" className="text-sm text-primary font-normal hover:underline">Open planner →</Link>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {stats.map(s => (
-                  <div key={s.label} className="rounded-lg border border-border/60 p-3">
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
-                    <p className="text-lg font-display font-bold mt-1 truncate">{s.value}</p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Weekly completion</span>
+                <span className="font-medium">{completionRate}%</span>
               </div>
-
-              <div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Weekly completion</span>
-                  <span className="font-medium">{completionRate}%</span>
-                </div>
-                <Progress value={completionRate} className="h-2 mt-1" />
-              </div>
+              <Progress value={completionRate} className="h-2" />
 
               <div className="space-y-3">
                 {weeklyActions.map(action => {
                   const checked = completedActions.includes(action.id);
 
                   return (
-                    <label key={action.id} className="flex items-start gap-3 rounded-lg border border-border/60 p-3 cursor-pointer">
+                    <label key={action.id} className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-3 cursor-pointer">
                       <Checkbox
                         checked={checked}
                         onCheckedChange={(value) => {
@@ -206,7 +229,7 @@ export default function Dashboard() {
                         className="mt-0.5"
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium leading-tight">{action.title}</p>
                           <Badge variant={action.impact === 'high' ? 'default' : 'secondary'} className="h-5 text-[10px]">
                             {action.impact}
@@ -221,31 +244,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-display flex items-center justify-between">
-                Opportunity Board
-                <Link to="/career" className="text-sm text-primary font-normal hover:underline">View all roles →</Link>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {topJobs.length === 0 && <p className="text-muted-foreground text-sm">Add skills to see job matches</p>}
-              {topJobs.map(j => (
-                <div key={j.id} className="flex flex-col gap-2 rounded-lg border border-border/50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{j.role}</p>
-                    <p className="text-xs text-muted-foreground">{formatINRRange(j.salary_min, j.salary_max)}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Progress value={j.match} className="w-20 sm:w-24 h-2" />
-                    <span className="text-xs font-medium w-8 text-right">{j.match}%</span>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/50">
+          <Card className="panel-soft">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display">Salary Impact by Skill</CardTitle>
             </CardHeader>
@@ -266,10 +265,31 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+
+          <Card className="panel-soft">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-display">Opportunity Board</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {topJobs.length === 0 && <p className="text-muted-foreground text-sm">Add skills to see job matches</p>}
+              {topJobs.map(j => (
+                <div key={j.id} className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{j.role}</p>
+                    <p className="text-xs text-muted-foreground">{formatINRRange(j.salary_min, j.salary_max)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Progress value={j.match} className="w-20 sm:w-24 h-2" />
+                    <span className="text-xs font-medium w-8 text-right">{j.match}%</span>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="border-border/50 gradient-finance text-primary-foreground">
+        <aside className="space-y-6 lg:sticky lg:top-24 self-start">
+          <Card className="gradient-finance hover-glow text-primary-foreground border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display text-primary-foreground">Growth Snapshot</CardTitle>
             </CardHeader>
@@ -286,7 +306,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className="panel-soft">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display">Recommended Next Skills</CardTitle>
             </CardHeader>
@@ -295,7 +315,7 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">You already have the highest-priority mapped skills.</p>
               ) : (
                 skillRecommendations.map(rec => (
-                  <div key={rec.skill} className="rounded-lg border border-border/60 p-3">
+                  <div key={rec.skill} className="rounded-2xl border border-border/60 bg-muted/20 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium">{rec.skill}</p>
                       <span className="text-xs text-primary">+{formatINRCompact(rec.salaryBoost)}</span>
@@ -311,7 +331,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className="panel-soft">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-display flex items-center justify-between">
                 Skills Distribution
@@ -377,7 +397,7 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </aside>
       </div>
     </div>
   );

@@ -11,9 +11,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR, formatINRCompact } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
-import { buildPlanInsights } from '@/lib/phase2';
+import { buildPlanInsights } from '@/lib/recommendations';
 import { getStorageJson, setStorageJson } from '@/lib/local-storage';
-import type { SavedSimulationScenario } from '@/lib/phase3';
+import type { SavedSimulationScenario } from '@/lib/career-roadmap';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Simulation() {
@@ -32,13 +32,13 @@ export default function Simulation() {
       setSavedScenarios([]);
       return;
     }
-    const key = `skillworth:phase3:scenarios:${user.id}`;
+    const key = `skillworth:scenario-lab:scenarios:${user.id}`;
     setSavedScenarios(getStorageJson<SavedSimulationScenario[]>(key, []));
   }, [user?.id]);
 
   const persistScenarios = (next: SavedSimulationScenario[]) => {
     if (!user?.id) return;
-    const key = `skillworth:phase3:scenarios:${user.id}`;
+    const key = `skillworth:scenario-lab:scenarios:${user.id}`;
     setSavedScenarios(next);
     setStorageJson(key, next);
   };
@@ -123,14 +123,13 @@ export default function Simulation() {
 
   return (
     <div className="space-y-6 animate-fade-in page-shell">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Growth Simulation</h1>
-          <p className="text-muted-foreground mt-1">"What if" scenario — see how new skills impact your career</p>
-        </div>
-      </div>
+      <section className="page-hero">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Scenario Lab</p>
+        <h1 className="text-3xl sm:text-4xl font-display font-bold mt-2">Growth Simulation</h1>
+        <p className="text-muted-foreground mt-1">"What if" scenario — see how new skills impact your career</p>
+      </section>
 
-      <Card className="border-border/50">
+      <Card className="panel-soft">
         <CardHeader>
           <CardTitle className="text-lg font-display flex items-center gap-2"><FlaskConical className="w-5 h-5 text-simulation" /> Build Compare Plans</CardTitle>
         </CardHeader>
@@ -195,7 +194,7 @@ export default function Simulation() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
+      <Card className="panel-soft">
         <CardHeader>
           <CardTitle className="text-lg font-display">Saved Scenarios</CardTitle>
         </CardHeader>
@@ -206,7 +205,7 @@ export default function Simulation() {
               value={scenarioName}
               onChange={e => setScenarioName(e.target.value)}
             />
-            <Button onClick={saveScenario} disabled={!planASkills.length && !planBSkills.length}>
+            <Button onClick={saveScenario} disabled={!planASkills.length && !planBSkills.length} className="hover-glow">
               Save Scenario
             </Button>
           </div>
@@ -235,21 +234,21 @@ export default function Simulation() {
       {hasPlanData && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-border/50">
+            <Card className="panel-soft">
               <CardContent className="p-4 space-y-1">
                 <p className="text-xs text-muted-foreground">Current baseline</p>
                 <p className="text-xl font-display font-bold">{formatINR(baseInsights.salary.estimated)}</p>
                 <p className="text-xs text-muted-foreground">Avg match: {baseInsights.avgMatch}%</p>
               </CardContent>
             </Card>
-            <Card className="border-border/50">
+            <Card className="panel-soft">
               <CardContent className="p-4 space-y-1">
                 <p className="text-xs text-muted-foreground">Plan A forecast</p>
                 <p className="text-xl font-display font-bold">{formatINR(planAInsights.salary.estimated)}</p>
                 <p className="text-xs text-primary">+{formatINR(planASalaryGain)} | +{planAAvgGain}% avg match</p>
               </CardContent>
             </Card>
-            <Card className="border-border/50">
+            <Card className="panel-soft">
               <CardContent className="p-4 space-y-1">
                 <p className="text-xs text-muted-foreground">Plan B forecast</p>
                 <p className="text-xl font-display font-bold">{formatINR(planBInsights.salary.estimated)}</p>
@@ -259,7 +258,7 @@ export default function Simulation() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,.9fr)]">
-            <Card className="border-border/50">
+            <Card className="panel-soft">
               <CardHeader>
                 <CardTitle className="text-lg font-display">Role Match Comparison</CardTitle>
               </CardHeader>
@@ -314,7 +313,7 @@ export default function Simulation() {
       )}
 
       {!hasPlanData && (
-        <Card className="border-border/50">
+        <Card className="panel-soft">
           <CardContent className="p-6 text-center text-sm text-muted-foreground">
             Add skills into Plan A or Plan B to compare salary growth and job-match outcomes.
           </CardContent>

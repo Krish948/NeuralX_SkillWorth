@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildAdaptiveLearningPlan } from '@/lib/phase4';
+import { buildAdaptiveLearningPlan } from '@/lib/adaptive-planner';
 import type { JobRow } from '@/hooks/useJobs';
-import { buildLearningPlan, buildMilestonesFromPlan, getRoleReadiness } from '@/lib/phase3';
+import { buildLearningPlan, buildMilestonesFromPlan, getRoleReadiness } from '@/lib/career-roadmap';
 
 const jobs: JobRow[] = [
   {
@@ -22,7 +22,7 @@ const jobs: JobRow[] = [
   },
 ];
 
-describe('phase4', () => {
+describe('adaptive-planner', () => {
   it('prioritizes overdue and readiness-gap skills first', () => {
     const learningPlan = buildLearningPlan(['React'], jobs, 6, 3);
     const milestones = buildMilestonesFromPlan(learningPlan, 6, new Date('2026-01-01T00:00:00.000Z')).map((milestone, index) =>

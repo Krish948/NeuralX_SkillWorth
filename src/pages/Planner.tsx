@@ -21,6 +21,7 @@ import {
   type LearningMilestone,
   type MilestoneStatus,
 } from '@/lib/phase3';
+import { buildAdaptiveLearningPlan } from '@/lib/phase4';
 import { CalendarCheck2, Siren, Rocket, Clock3, Flag, Search } from 'lucide-react';
 
 function storageKey(userId: string, suffix: string): string {
@@ -103,6 +104,8 @@ export default function Planner() {
     setStorageItem(storageKey(user.id, 'last-active'), new Date().toISOString());
   }, [milestones, weeklyHours, user?.id]);
 
+  const lastActiveIso = user?.id ? getStorageItem(storageKey(user.id, 'last-active')) : null;
+
   if (userSkillsLoading || jobsLoading || financeLoading) {
     return (
       <div className="page-shell">
@@ -131,6 +134,18 @@ export default function Planner() {
 
   const selectedJob = jobs.find(job => job.id === targetRoleId) || jobs[0] || null;
   const readiness = getRoleReadiness(skillNames, selectedJob);
+  const adaptivePlan = useMemo(
+    () =>
+      buildAdaptiveLearningPlan({
+        learningPlan,
+        milestones,
+        weeklyHours,
+        lastActiveIso,
+        readiness,
+        hasFinancePlan: Boolean(finance),
+      }),
+    [finance, learningPlan, lastActiveIso, milestones, readiness, weeklyHours],
+  );
 
   const completedMilestones = milestones.filter(milestone => milestone.status === 'completed').length;
   const completionRate = milestones.length === 0 ? 0 : Math.round((completedMilestones / milestones.length) * 100);
@@ -149,7 +164,6 @@ export default function Planner() {
   const projectedQuarterly = projection.points[2] || projection.points[projection.points.length - 1];
   const projectedYearly = projection.points[11] || projection.points[projection.points.length - 1];
 
-  const lastActiveIso = user?.id ? getStorageItem(storageKey(user.id, 'last-active')) : null;
   const nudges = buildActionNudges({
     milestones,
     lastActiveIso,
@@ -160,12 +174,12 @@ export default function Planner() {
 
   const visibleLearningPlan = useMemo(
     () =>
-      learningPlan.filter(item =>
+      adaptivePlan.items.filter(item =>
         sprintSearch.trim().length === 0
           ? true
           : item.skill.toLowerCase().includes(sprintSearch.trim().toLowerCase()),
       ),
-    [learningPlan, sprintSearch],
+    [adaptivePlan.items, sprintSearch],
   );
 
   const groupedMilestones = statusColumns.map(status => ({
@@ -258,6 +272,44 @@ export default function Planner() {
         </Card>
       </div>
 
+      <Card className="border-border/50 bg-muted/20">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Adaptive Pulse</p>
+              <h2 className="text-lg font-display font-bold mt-1">Phase 4 priority reset</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                The planner reorders learning based on progress, blockers, weekly capacity, and recent activity.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Badge variant={adaptivePlan.summary.needsReset ? 'default' : 'secondary'}>
+                {adaptivePlan.summary.needsReset ? 'Needs reset' : 'On track'}
+              </Badge>
+              <Badge variant="outline">Cadence: {adaptivePlan.summary.cadenceLabel}</Badge>
+              <Badge variant="outline">Overdue: {adaptivePlan.summary.overdueCount}</Badge>
+              <Badge variant="outline">Blocked: {adaptivePlan.summary.blockedCount}</Badge>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+              <p className="text-[11px] text-muted-foreground">Top priority</p>
+              <p className="text-sm font-medium mt-1">{adaptivePlan.summary.topPrioritySkill || 'No active skill'}</p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+              <p className="text-[11px] text-muted-foreground">Idle days</p>
+              <p className="text-sm font-medium mt-1">
+                {adaptivePlan.summary.idleDays === null ? 'No activity stamp' : `${adaptivePlan.summary.idleDays} day${adaptivePlan.summary.idleDays === 1 ? '' : 's'}`}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+              <p className="text-[11px] text-muted-foreground">Reset trigger</p>
+              <p className="text-sm font-medium mt-1">{adaptivePlan.summary.needsReset ? 'Replan this week' : 'Keep the current sequence'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
         <Card className="border-border/50">
           <CardHeader>
@@ -287,7 +339,24 @@ export default function Planner() {
                       {item.recommendedHours}h total, {item.weeklyHoursTarget}h/week target
                     </p>
                   </div>
-                  <Badge variant="secondary">+{formatINRCompact(item.estimatedSalaryBoost)}/yr</Badge>
+                  <div className="flex flex-wrap items-center gap-2 justify-start sm:justify-end">
+                    <Badge variant={item.status === 'blocked' ? 'default' : 'secondary'} className="capitalize">
+                      {item.status}
+                    </Badge>
+                    <Badge variant="outline">{Math.round(item.urgencyScore)} urgency</Badge>
+                    <Badge variant="secondary">+{formatINRCompact(item.estimatedSalaryBoost)}/yr</Badge>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-lg border border-border/50 bg-muted/30 p-2">
+                    <p className="text-[11px] text-muted-foreground">Why this moved up</p>
+                    <p className="text-xs mt-1 leading-relaxed">{item.focusReason}</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-muted/30 p-2">
+                    <p className="text-[11px] text-muted-foreground">Next step</p>
+                    <p className="text-xs mt-1 leading-relaxed">{item.nextStep}</p>
+                  </div>
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -312,7 +381,7 @@ export default function Planner() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-border/50">
+          <Card className="border-border/50 hover-glow">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">
                 <Flag className="w-5 h-5 text-primary" /> Readiness Gate
@@ -320,6 +389,7 @@ export default function Planner() {
             </CardHeader>
             <CardContent className="space-y-3">
               <select
+                aria-label="Select target role"
                 className="w-full rounded-md border border-border bg-background p-2 text-sm"
                 value={selectedJob?.id || ''}
                 onChange={e => setTargetRoleId(e.target.value)}
@@ -416,7 +486,7 @@ export default function Planner() {
                             key={`${milestone.id}-${status}`}
                             size="sm"
                             variant={milestone.status === status ? 'default' : 'outline'}
-                            className="h-6 text-[10px] capitalize"
+                            className="h-6 text-[10px] capitalize hover-glow"
                             onClick={() => setMilestoneStatus(milestone.id, status)}
                           >
                             {status}

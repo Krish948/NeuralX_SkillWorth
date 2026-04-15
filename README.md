@@ -60,6 +60,7 @@ Core user journey:
 - Skill-to-salary mapping and job match scoring.
 - Interactive charts for skill distribution and salary impact.
 - Finance planner with expense tracking and goal progress.
+- Financial growth strategy with burn-rate analysis, emergency runway tracking, debt payoff simulation, and savings milestone ladder.
 - Salary and finance values displayed in INR (rupees).
 - Adaptive planner for learning paths, milestones, readiness gates, and savings projection.
 

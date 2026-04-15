@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useFinance, useSaveFinance, ExpenseItem } from '@/hooks/useFinance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,18 +8,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Wallet, Plus, X, Target, PiggyBank, TrendingDown, CalendarDays, Repeat2, Filter } from 'lucide-react';
+import { Wallet, Plus, X, Target, PiggyBank, TrendingDown, CalendarDays, Repeat2, Filter, Flame, Landmark, ShieldCheck, CircleDollarSign } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatINR } from '@/lib/currency';
 import { StatePanel } from '@/components/ui/state-panel';
+import { getStorageJson, setStorageJson } from '@/lib/local-storage';
+import { buildFinancialGrowthStrategy } from '@/lib/financial-growth';
 
 const EXPENSE_CATEGORIES = ['Housing', 'Food', 'Transport', 'Entertainment', 'Utilities', 'Healthcare', 'Education', 'Shopping', 'Other'];
 const PAYMENT_MODES: Array<NonNullable<ExpenseItem['paymentMode']>> = ['UPI', 'Card', 'Cash', 'Bank Transfer', 'Auto Debit'];
 const PIE_COLORS = ['#10b981', '#8b5cf6', '#f59e0b', '#3b82f6', '#ef4444', '#6366f1', '#14b8a6', '#f97316', '#94a3b8'];
 const PIE_COLOR_CLASSES = ['bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-sky-500', 'bg-red-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-slate-400'];
 const ESSENTIAL_CATEGORIES = ['Housing', 'Food', 'Transport', 'Utilities', 'Healthcare', 'Education'];
+
+interface FinancialGrowthPrefs {
+  debtBalance: number;
+  debtApr: number;
+  debtMonthlyPayment: number;
+}
+
+function growthPrefsKey(userId: string): string {
+  return `skillworth:finance:growth:${userId}`;
+}
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -49,7 +62,17 @@ function normalizeExpenses(rawExpenses: ExpenseItem[] | null | undefined): Expen
   });
 }
 
+function formatEtaMonths(months: number | null): string {
+  if (months === null) return 'Set positive monthly savings to estimate ETA';
+  if (months === 0) return 'Achieved';
+  if (months === 1) return '1 month';
+  if (months < 12) return `${months} months`;
+  const years = (months / 12).toFixed(1);
+  return `${years} years`;
+}
+
 export default function Finance() {
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const { data: finance, isLoading, error } = useFinance();
   const saveFinance = useSaveFinance();
@@ -67,6 +90,9 @@ export default function Finance() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState(new Date().toISOString().slice(0, 7));
+  const [debtBalance, setDebtBalance] = useState(0);
+  const [debtApr, setDebtApr] = useState(12);
+  const [debtMonthlyPayment, setDebtMonthlyPayment] = useState(0);
 
   useEffect(() => {
     if (finance) {
@@ -76,6 +102,27 @@ export default function Finance() {
       setGoalAmount(Number(finance.goal_amount) || 0);
     }
   }, [finance]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const prefs = getStorageJson<FinancialGrowthPrefs>(growthPrefsKey(user.id), {
+      debtBalance: 0,
+      debtApr: 12,
+      debtMonthlyPayment: 0,
+    });
+    setDebtBalance(Math.max(0, Number(prefs.debtBalance) || 0));
+    setDebtApr(Math.max(0, Number(prefs.debtApr) || 0));
+    setDebtMonthlyPayment(Math.max(0, Number(prefs.debtMonthlyPayment) || 0));
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    setStorageJson(growthPrefsKey(user.id), {
+      debtBalance,
+      debtApr,
+      debtMonthlyPayment,
+    });
+  }, [debtApr, debtBalance, debtMonthlyPayment, user?.id]);
 
   const monthOptions = useMemo(() => {
     const keys = Array.from(new Set(expenses.map(expense => getMonthKey(expense.date || '')))).sort().reverse();
@@ -124,6 +171,20 @@ export default function Finance() {
   const discretionaryShare = totalExpenses > 0 ? Math.round((discretionarySpend / totalExpenses) * 100) : 0;
   const essentialsShare = totalExpenses > 0 ? Math.round((essentialsSpend / totalExpenses) * 100) : 0;
   const requiredMonthlyForGoal = goalAmount > 0 ? Math.max(Math.round(goalAmount / 12), 0) : 0;
+  const growthStrategy = useMemo(
+    () =>
+      buildFinancialGrowthStrategy({
+        income,
+        totalExpenses,
+        essentialsExpenses: essentialsSpend,
+        currentSavings: Math.max(0, currentSavings),
+        goalAmount,
+        debtBalance,
+        debtApr,
+        debtMonthlyPayment,
+      }),
+    [currentSavings, debtApr, debtBalance, debtMonthlyPayment, essentialsSpend, goalAmount, income, totalExpenses],
+  );
 
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -492,6 +553,75 @@ export default function Finance() {
               ) : (
                 <p className="text-xs opacity-90">Set your target amount to unlock pacing guidance.</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="panel-soft">
+            <CardHeader>
+              <CardTitle className="text-lg font-display">Financial Growth Strategy</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Debt Balance</Label>
+                  <Input type="number" value={debtBalance || ''} onChange={e => setDebtBalance(Math.max(0, Number(e.target.value) || 0))} placeholder="0" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Debt APR (%)</Label>
+                  <Input type="number" value={debtApr || ''} onChange={e => setDebtApr(Math.max(0, Number(e.target.value) || 0))} placeholder="12" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Monthly Debt Payment</Label>
+                  <Input type="number" value={debtMonthlyPayment || ''} onChange={e => setDebtMonthlyPayment(Math.max(0, Number(e.target.value) || 0))} placeholder="0" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> Burn Rate</p>
+                  <p className="text-sm font-semibold mt-1">{formatINR(growthStrategy.burnRate)}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1"><CircleDollarSign className="w-3.5 h-3.5" /> Monthly Capacity</p>
+                  <p className="text-sm font-semibold mt-1">{formatINR(growthStrategy.savingsCapacity)}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> Runway</p>
+                  <p className="text-sm font-semibold mt-1">{growthStrategy.runwayMonths === null ? 'N/A' : `${growthStrategy.runwayMonths} months`}</p>
+                </div>
+                <div className="rounded-lg border border-border/60 p-3">
+                  <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Target className="w-3.5 h-3.5" /> 6-Month Emergency Target</p>
+                  <p className="text-sm font-semibold mt-1">{formatINR(growthStrategy.emergencyFundTarget)}</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border/60 p-3 space-y-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1"><Landmark className="w-3.5 h-3.5" /> Debt Payoff</p>
+                {growthStrategy.debtPayoff ? (
+                  <>
+                    <p className="text-sm font-semibold">Estimated payoff in {growthStrategy.debtPayoff.months} months</p>
+                    <p className="text-xs text-muted-foreground">Estimated interest: {formatINR(growthStrategy.debtPayoff.totalInterest)} at {debtApr}% APR.</p>
+                  </>
+                ) : debtBalance > 0 ? (
+                  <p className="text-xs text-muted-foreground">Current payment is too low for this balance/APR. Increase monthly debt payment to start payoff.</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No active debt entered. Add debt details to simulate payoff timeline.</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Savings Milestone Ladder</p>
+                {growthStrategy.savingsMilestones.map(milestone => (
+                  <div key={milestone.id} className="rounded-xl border border-border/60 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium">{milestone.label}</p>
+                      <Badge variant={milestone.achieved ? 'default' : 'secondary'} className="text-[10px]">{milestone.achieved ? 'Achieved' : formatEtaMonths(milestone.etaMonths)}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Target: {formatINR(milestone.targetAmount)} • Remaining: {formatINR(milestone.remainingAmount)}</p>
+                    <Progress value={milestone.progress} className="h-1.5" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
